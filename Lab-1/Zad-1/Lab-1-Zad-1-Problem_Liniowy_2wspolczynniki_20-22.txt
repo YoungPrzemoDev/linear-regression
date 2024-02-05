@@ -1,0 +1,78 @@
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
+import statsmodels.api as sm
+
+rok = np.array([2007, 2008, 2009, 2010, 2011, 2012, 2013,2014, 2015, 2016, 2017,2018,2019]).reshape(-1, 1)
+rok_predict = np.array([2020,2021,2022]).reshape(-1, 1)
+przychod = np.array([153, 272, 777, 1974, 3711, 5089, 7872,12466, 17928, 27638, 40653, 55838, 70697]).reshape(-1, 1)
+przychod_predict = np.array([ 85965, 117929, 116609]).reshape(-1, 1)
+dane_treningowe_zatrudenienia = np.array([450, 850, 1218, 2127, 3200, 4619, 6337,9199, 12691, 17048, 25105,35587, 44942])
+dane_testowe_zatrudnienie = np.array([58604, 71970, 86482])
+
+# Model regresji liniowej z dwiema zmiennymi
+X = np.concatenate((przychod, rok), axis=1)
+X_const = sm.add_constant(X)
+model_linear = sm.OLS(dane_treningowe_zatrudenienia, X_const).fit()
+
+# Przedział ufności dla prognoz
+X_predict = np.concatenate((przychod_predict, rok_predict), axis=1)
+X_predict_const = sm.add_constant(X_predict)
+predykcje_interval = model_linear.get_prediction(X_predict_const).conf_int()
+
+# Wykresy danych, prognoz i przedziału ufności
+plt.figure(figsize=(12, 6))
+plt.scatter(przychod, dane_treningowe_zatrudenienia, color='b', label='Dane rzeczywiste')
+plt.scatter(przychod_predict, dane_testowe_zatrudnienie, color='red', label='Dane testowe')
+plt.plot(przychod, model_linear.fittedvalues, color='r', label='Regresja liniowa')
+plt.plot(przychod_predict, model_linear.predict(X_predict_const), color='g', linestyle='--', label='Prognozy liniowe')
+plt.fill_between(przychod_predict.flatten(), predykcje_interval[:, 0], predykcje_interval[:, 1], color='green', alpha=0.2, label='Przedział ufności')
+
+plt.title('Regresja liniowa z przedziałem ufności')
+plt.xlabel('przychod')
+plt.ylabel('zatrudnienie')
+plt.legend()
+plt.show()
+
+
+
+# Inicjalizacja modelu liniowego (Scikit-learn) z dwiema zmiennymi
+model_linear_sklearn = LinearRegression()
+
+# Dopasowanie modelu liniowego do danych treningowych (Scikit-learn) z dwiema zmiennymi
+model_linear_sklearn.fit(X, dane_treningowe_zatrudenienia)
+
+# Obliczenie predykcji dla modelu liniowego (Scikit-learn) z dwiema zmiennymi
+prognozy_linear_sklearn = model_linear_sklearn.predict(X_predict)
+
+# Obliczenia dla modelu regresji liniowej (Scikit-learn) z dwiema zmiennymi
+r_squared_linear_sklearn = r2_score(dane_treningowe_zatrudenienia, model_linear_sklearn.predict(X))
+mse_linear_sklearn = mean_squared_error(dane_treningowe_zatrudenienia, model_linear_sklearn.predict(X))
+rmse_linear_sklearn = np.sqrt(mse_linear_sklearn)
+
+# Prognozy modelu regresji liniowej na następne kwartały (Scikit-learn) z dwiema zmiennymi
+prognozy_linear_testowe_sklearn = model_linear_sklearn.predict(X_predict)
+
+# Obliczenia dla modelu regresji liniowej na danych testowych (Scikit-learn) z dwiema zmiennymi
+r_squared_testowe_sklearn = r2_score(dane_testowe_zatrudnienie, prognozy_linear_testowe_sklearn)
+rmse_testowe_sklearn = np.sqrt(mean_squared_error(dane_testowe_zatrudnienie, prognozy_linear_testowe_sklearn))
+
+# Obliczenia dla reszt (Scikit-learn) z dwiema zmiennymi
+reszty_sklearn = dane_treningowe_zatrudenienia - model_linear_sklearn.predict(X)
+std_reszt_sklearn = np.std(reszty_sklearn)
+min_reszt_sklearn = np.min(reszty_sklearn)
+max_reszt_sklearn = np.max(reszty_sklearn)
+
+# Wyświetl wyniki (Scikit-learn) z dwiema zmiennymi
+print("Współczynniki regresji liniowej (Scikit-learn):", model_linear_sklearn.coef_)
+print("Intercept (Scikit-learn):", model_linear_sklearn.intercept_)
+print("R-squared (Scikit-learn):", r_squared_linear_sklearn)
+print("RMSE (Scikit-learn):", rmse_linear_sklearn)
+print("Prognozy modelu liniowego na następne kwartały (Scikit-learn):", prognozy_linear_testowe_sklearn)
+print("R-squared dla danych testowych (Scikit-learn):", r_squared_testowe_sklearn)
+print("RMSE dla danych testowych (Scikit-learn):", rmse_testowe_sklearn)
+print("Odchylenie standardowe reszt (Scikit-learn):", std_reszt_sklearn)
+print("Minimum reszt (Scikit-learn):", min_reszt_sklearn)
+print("Maksimum reszt (Scikit-learn):", max_reszt_sklearn)

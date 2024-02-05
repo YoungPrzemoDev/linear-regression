@@ -1,0 +1,78 @@
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+import math
+from sklearn.metrics import r2_score
+import statsmodels.api as sm
+
+
+# Kolejne kwartały i odpowiadające im wartości
+kwartaly = np.arange(1, 25).reshape(-1, 1)
+wartosci_treningowe = np.array([197, 242, 305, 360, 431, 482, 550, 608, 680, 739, 800, 845, 901, 955, 1007, 1056, 1110, 1155, 1189, 1228, 1276, 1317, 1350, 1393])
+
+dane_testowe = np.array([1441, 1490, 1545, 1591, 1654, 1712, 1788, 1860, 1936, 2006, 2072, 2129])
+
+nastepne_kwartaly = np.arange(25,37).reshape(-1, 1)
+
+
+# Model regresji wielomianowej 3. stopnia
+poly_features = PolynomialFeatures(degree=3)
+kwartal_poly3 = poly_features.fit_transform(kwartaly)
+model_poly3 = sm.OLS(wartosci_treningowe, kwartal_poly3).fit()
+
+# Przygotuj dane testowe z cechami wielomianowymi
+nastepne_kwartaly_poly3 = poly_features.transform(nastepne_kwartaly)
+
+# Przedział ufności dla prognoz wielomianowych 3. stopnia
+predykcje_interval_poly3 = model_poly3.get_prediction(nastepne_kwartaly_poly3).conf_int()
+
+prognozy_poly3 = model_poly3.predict(nastepne_kwartaly_poly3)
+
+# Wykresy danych, prognoz i przedziału ufności
+plt.figure(figsize=(12, 6))
+plt.scatter(kwartaly, wartosci_treningowe, color='b', label='Dane rzeczywiste')
+plt.scatter(nastepne_kwartaly, dane_testowe, color='red', label='Dane testowe')
+plt.plot(kwartaly, model_poly3.predict(kwartal_poly3), color='r', label='Regresja wielomianowa (stopień 3)')
+plt.plot(nastepne_kwartaly, prognozy_poly3, color='g', linestyle='--', label='Prognozy wielomianowe (stopień 3)')
+plt.fill_between(nastepne_kwartaly.flatten(), predykcje_interval_poly3[:, 0], predykcje_interval_poly3[:, 1], color='green', alpha=0.2, label='Przedział ufności')
+
+plt.title('Regresja wielomianowa (stopień 3) z przedziałem ufności')
+plt.xlabel('przychod')
+plt.ylabel('zatrudnienie')
+plt.legend()
+plt.show()
+
+
+# Obliczenia dla modelu wielomianowego 3. stopnia
+coefficients_poly3 = model_poly3.params
+intercept_poly3 = model_poly3.params[0]
+
+# Oblicz R-squared dla modelu wielomianowego 3. stopnia
+r2_poly3 = r2_score(wartosci_treningowe, model_poly3.fittedvalues)
+
+# Oblicz RMSE (pierwiastek błędu średniokwadratowego) dla modelu wielomianowego 3. stopnia
+mse_poly3 = mean_squared_error(wartosci_treningowe, model_poly3.fittedvalues)
+rmse_poly3 = np.sqrt(mse_poly3)
+
+# Prognozy dla modelu wielomianowego 3. stopnia na danych testowych
+prognozy_poly3_testowe = model_poly3.predict(sm.add_constant(nastepne_kwartaly_poly3))
+
+# Oblicz R-squared dla danych testowych
+r2_poly3_testowe = r2_score(dane_testowe, prognozy_poly3_testowe)
+
+# Oblicz prognozy na następne kwartały
+prognozy_poly3_nastepne = model_poly3.predict(sm.add_constant(poly_features.transform(nastepne_kwartaly)))
+
+# Oblicz R-squared dla prognoz na następne kwartały
+r2_poly3_nastepne = r2_score(dane_testowe, prognozy_poly3_testowe)
+
+# Wypisz wyniki
+print("Współczynniki modelu wielomianowego 3. stopnia:")
+print("Intercept:", intercept_poly3)
+print("Coefficients:", coefficients_poly3)
+print("\nR-squared dla modelu wielomianowego 3. stopnia:", r2_poly3)
+print("RMSE dla modelu wielomianowego 3. stopnia:", rmse_poly3)
+print("\nR-squared dla danych testowych:", r2_poly3_testowe)

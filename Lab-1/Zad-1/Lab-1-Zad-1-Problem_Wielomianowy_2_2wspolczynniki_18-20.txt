@@ -1,0 +1,72 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_squared_error
+
+# Dostarczone dane
+rok = np.array([2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 ]).reshape(-1, 1)
+rok_predict = np.array([ 2018, 2019]).reshape(-1, 1)
+przychod = np.array([153, 272, 777, 1974, 3711, 5089, 7872,12466, 17928, 27638, 40653]).reshape(-1, 1)
+przychod_predict = np.array([ 55838, 70697]).reshape(-1, 1)
+dane_treningowe_zatrudenienia = np.array([450, 850, 1218, 2127, 3200, 4619, 6337,9199, 12691, 17048, 25105])
+dane_testowe_zatrudnienie = np.array([35587, 44942])
+
+# Kombinacja 'przychód' i 'rok' dla danych treningowych
+X_train = np.concatenate((przychod, rok), axis=1)
+# Kombinacja 'przychód' i 'rok' dla danych testowych
+X_test = np.concatenate((przychod_predict, rok_predict), axis=1)
+
+# Model regresji wielomianowej 2. stopnia z 'przychód' i 'rok'
+poly_features_2 = PolynomialFeatures(degree=2)
+X_train_poly2 = poly_features_2.fit_transform(X_train)
+model_poly2 = sm.OLS(dane_treningowe_zatrudenienia, X_train_poly2).fit()
+
+# Przygotowanie danych testowych z cechami wielomianowymi (2. stopień)
+X_test_poly2 = poly_features_2.transform(X_test)
+
+# Predykcje dla danych testowych
+predictions_poly2 = model_poly2.predict(X_test_poly2)
+
+# Przedział ufności dla prognoz wielomianowych 2. stopnia
+predykcje_interval_poly2 = model_poly2.get_prediction(X_test_poly2).conf_int()
+
+
+plt.figure(figsize=(12, 6))
+plt.scatter(przychod[:, 0], dane_treningowe_zatrudenienia, color='b', label='Dane rzeczywiste')
+plt.scatter(przychod_predict[:, 0], dane_testowe_zatrudnienie, color='red', label='Dane testowe')
+plt.plot(przychod[:, 0], model_poly2.predict(X_train_poly2), color='r', label='Regresja wielomianowa (stopień 2)')
+plt.plot(przychod_predict[:, 0], predictions_poly2, color='g', linestyle='--', label='Prognozy wielomianowe (stopień 2)')
+plt.fill_between(przychod_predict[:, 0], predykcje_interval_poly2[:, 0], predykcje_interval_poly2[:, 1], color='green', alpha=0.2, label='Przedział ufności')
+
+plt.title('Regresja wielomianowa (stopień 2) z przedziałem ufności')
+plt.xlabel('przychod')
+plt.ylabel('zatrudnienie')
+plt.legend()
+plt.show()
+
+
+# Obliczenia dla modelu regresji wielomianowej stopnia 2
+r_squared_poly2_train = r2_score(dane_treningowe_zatrudenienia, model_poly2.predict(X_train_poly2))
+rmse_poly2_train = np.sqrt(mean_squared_error(dane_treningowe_zatrudenienia, model_poly2.predict(X_train_poly2)))
+
+r_squared_poly2_test = r2_score(dane_testowe_zatrudnienie, predictions_poly2)
+rmse_poly2_test = np.sqrt(mean_squared_error(dane_testowe_zatrudnienie, predictions_poly2))
+
+# Reszty dla modelu stopnia 2
+residues_poly2 = dane_treningowe_zatrudenienia - model_poly2.predict(X_train_poly2)
+std_residues_poly2 = np.std(residues_poly2)
+min_residues_poly2 = np.min(residues_poly2)
+max_residues_poly2 = np.max(residues_poly2)
+
+# Wyświetlenie wyników dla modelu regresji wielomianowej stopnia 2
+print("R-squared (treningowe, stopień 2):", r_squared_poly2_train)
+print("RMSE (treningowe, stopień 2):", rmse_poly2_train)
+print("R-squared (testowe, stopień 2):", r_squared_poly2_test)
+print("RMSE (testowe, stopień 2):", rmse_poly2_test)
+print("Współczynniki regresji wielomianowej (stopień 2):", model_poly2.params)
+print("Odchylenie standardowe reszt (stopień 2):", std_residues_poly2)
+print("Minimum reszt (stopień 2):", min_residues_poly2)
+print("Maksimum reszt (stopień 2):", max_residues_poly2)
+
